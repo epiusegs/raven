@@ -34,6 +34,7 @@ import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { BiPlus } from 'react-icons/bi'
 import clsx from 'clsx'
 import { ChannelMembers } from '@/hooks/fetchers/useFetchChannelMembers'
+import TimestampRenderer from '../ChatMessage/Renderers/TiptapRenderer/TimestampRenderer'
 const MobileInputActions = lazy(() => import('./MobileActions/MobileInputActions'))
 
 const lowlight = createLowlight(common)
@@ -61,7 +62,9 @@ type TiptapEditorProps = {
     messageSending: boolean,
     defaultText?: string,
     replyMessage?: Message | null,
-    channelMembers?: ChannelMembers
+    channelMembers?: ChannelMembers,
+    channelID?: string,
+    onUserType?: () => void,
 }
 
 export const UserMention = Mention.extend({
@@ -84,7 +87,7 @@ export const ChannelMention = Mention.extend({
         }
     })
 
-const Tiptap = ({ isEdit, slotBefore, fileProps, onMessageSend, channelMembers, replyMessage, clearReplyMessage, placeholder = 'Type a message...', messageSending, sessionStorageKey = 'tiptap-editor', disableSessionStorage = false, defaultText = '' }: TiptapEditorProps) => {
+const Tiptap = ({ isEdit, slotBefore, fileProps, onMessageSend, channelMembers, onUserType, channelID, replyMessage, clearReplyMessage, placeholder = 'Type a message...', messageSending, sessionStorageKey = 'tiptap-editor', disableSessionStorage = false, defaultText = '' }: TiptapEditorProps) => {
 
     const { enabledUsers } = useContext(UserListContext)
 
@@ -444,7 +447,8 @@ const Tiptap = ({ isEdit, slotBefore, fileProps, onMessageSend, channelMembers, 
 
             }
         }),
-        EmojiSuggestion
+        EmojiSuggestion,
+        TimestampRenderer
     ]
 
     const [content, setContent] = useSessionStickyState(defaultText, sessionStorageKey, disableSessionStorage)
@@ -456,6 +460,9 @@ const Tiptap = ({ isEdit, slotBefore, fileProps, onMessageSend, channelMembers, 
         autofocus: 'end',
         content,
         editorProps: {
+            handleTextInput() {
+                onUserType?.()
+            },
             attributes: {
                 class: 'tiptap-editor' + (replyMessage ? ' replying' : '') + (isEdit ? ' editing-message' : '')
             }
@@ -463,7 +470,7 @@ const Tiptap = ({ isEdit, slotBefore, fileProps, onMessageSend, channelMembers, 
         onUpdate({ editor }) {
             setContent(editor.getHTML())
         }
-    }, [replyMessage])
+    }, [replyMessage, onUserType])
 
 
 
@@ -484,7 +491,9 @@ const Tiptap = ({ isEdit, slotBefore, fileProps, onMessageSend, channelMembers, 
                     <EditorContent editor={editor} />
                     <ToolPanel>
                         <TextFormattingMenu />
-                        <RightToolbarButtons fileProps={fileProps} setContent={setContent} sendMessage={onMessageSend} messageSending={messageSending} />
+                        <RightToolbarButtons fileProps={fileProps} setContent={setContent} sendMessage={onMessageSend} messageSending={messageSending}
+                            isEdit={isEdit}
+                            channelID={channelID} />
                     </ToolPanel>
                 </EditorContext.Provider>
             </Box>
